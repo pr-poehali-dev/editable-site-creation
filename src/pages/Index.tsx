@@ -26,6 +26,11 @@ interface Section {
   };
 }
 
+interface SiteConfig {
+  title: string;
+  sections: Section[];
+}
+
 const defaultSections: Section[] = [
   {
     id: "hero",
@@ -46,36 +51,47 @@ const defaultSections: Section[] = [
   }
 ];
 
+const defaultConfig: SiteConfig = {
+  title: "Мой редактируемый сайт",
+  sections: defaultSections
+};
+
 const Index = () => {
-  const [sections, setSections] = useState<Section[]>([]);
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>(defaultConfig);
   const [newSectionType, setNewSectionType] = useState<Section["type"]>("text");
   const [showAddDialog, setShowAddDialog] = useState(false);
   
   useEffect(() => {
-    const savedSections = localStorage.getItem("website-sections");
-    if (savedSections) {
-      setSections(JSON.parse(savedSections));
-    } else {
-      setSections(defaultSections);
+    const savedConfig = localStorage.getItem("website-config");
+    if (savedConfig) {
+      setSiteConfig(JSON.parse(savedConfig));
     }
   }, []);
   
   const handleSaveWebsite = () => {
-    localStorage.setItem("website-sections", JSON.stringify(sections));
+    localStorage.setItem("website-config", JSON.stringify(siteConfig));
     toast({
       title: "Сайт сохранен",
       description: "Все изменения сохранены в локальном хранилище браузера.",
     });
   };
   
+  const updateSiteTitle = (title: string) => {
+    setSiteConfig(prev => ({
+      ...prev,
+      title
+    }));
+  };
+  
   const updateSectionContent = (sectionId: string, updates: Partial<Section["content"]>) => {
-    setSections(prevSections => 
-      prevSections.map(section => 
+    setSiteConfig(prev => ({
+      ...prev,
+      sections: prev.sections.map(section => 
         section.id === sectionId 
           ? { ...section, content: { ...section.content, ...updates } } 
           : section
       )
-    );
+    }));
   };
   
   const addNewSection = () => {
@@ -108,12 +124,18 @@ const Index = () => {
         break;
     }
     
-    setSections(prevSections => [...prevSections, newSection]);
+    setSiteConfig(prev => ({
+      ...prev,
+      sections: [...prev.sections, newSection]
+    }));
     setShowAddDialog(false);
   };
   
   const deleteSection = (sectionId: string) => {
-    setSections(prevSections => prevSections.filter(section => section.id !== sectionId));
+    setSiteConfig(prev => ({
+      ...prev,
+      sections: prev.sections.filter(section => section.id !== sectionId)
+    }));
   };
   
   const renderSection = (section: Section) => {
@@ -124,7 +146,7 @@ const Index = () => {
             key={section.id} 
             id={section.id} 
             onDelete={deleteSection}
-            canDelete={sections.length > 1}
+            canDelete={siteConfig.sections.length > 1}
           >
             <div className="flex flex-col items-center text-center py-10 px-4 gap-6">
               <EditableText
@@ -155,7 +177,7 @@ const Index = () => {
             key={section.id} 
             id={section.id} 
             onDelete={deleteSection}
-            canDelete={sections.length > 1}
+            canDelete={siteConfig.sections.length > 1}
           >
             <div className="py-8 px-4">
               <EditableText
@@ -180,7 +202,7 @@ const Index = () => {
             key={section.id} 
             id={section.id} 
             onDelete={deleteSection}
-            canDelete={sections.length > 1}
+            canDelete={siteConfig.sections.length > 1}
           >
             <div className="flex flex-col md:flex-row gap-8 py-8 px-4 items-center">
               <div className="md:w-1/2">
@@ -218,7 +240,14 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <header className="bg-white shadow-sm py-4">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold">Мой редактируемый сайт</h1>
+          <div className="group relative">
+            <EditableText
+              initialText={siteConfig.title}
+              tag="h1"
+              className="text-xl font-semibold"
+              onChange={updateSiteTitle}
+            />
+          </div>
           <div className="flex gap-2">
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
@@ -271,13 +300,13 @@ const Index = () => {
       
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">
-          {sections.map(renderSection)}
+          {siteConfig.sections.map(renderSection)}
         </div>
       </main>
       
       <footer className="bg-gray-50 py-8 border-t">
         <div className="container mx-auto px-4 text-center text-gray-500">
-          <p>© {new Date().getFullYear()} Мой редактируемый сайт</p>
+          <p>© {new Date().getFullYear()} {siteConfig.title}</p>
           <p className="text-sm mt-2">Наведите курсор на любой блок и нажмите на иконки, чтобы редактировать или удалять содержимое.</p>
         </div>
       </footer>
